@@ -26,4 +26,4 @@ Exclus :
 - [Issue 01 - Creer Database Manager PDO](issues/01-creer-database-manager-pdo.md)
 - [Issue 02 - Ajouter Query Helper securise](issues/02-ajouter-query-helper-securise.md)
 - [Issue 03 - Creer BaseModel MVP](issues/03-creer-basemodel-mvp.md)
-
+- [Issue 04 - Integrer database avec configuration kernel](issues/04-integrer-database-configuration-kernel.md)
