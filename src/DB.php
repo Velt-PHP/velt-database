@@ -8,30 +8,53 @@ use Closure;
 use LogicException;
 use PDO;
 use Throwable;
+use Velt\Database\Cache\DatabaseCacheInterface;
+use Velt\Database\Cache\NullDatabaseCache;
+use Velt\Database\Query\QueryBuilder;
 
 final class DB
 {
     // Manager statique pour accès global au gestionnaire de base de données
     private static ?DatabaseManager $manager = null;
 
-    /**
-     * Enregistre le manager de base de données pour utilisation via la façade DB.
-     */
+    private static ?DatabaseCacheInterface $cache = null;
+
+    //Enregistre le manager de base de données pour utilisation via la façade DB.
+     
     public static function setManager(DatabaseManager $manager): void
     {
         self::$manager = $manager;
     }
 
-    /**
-     * Réinitialise le manager (utile pour les tests).
-     */
+    // Réinitialise le manager (utile pour les tests).
+    
     public static function clearManager(): void
     {
         self::$manager = null;
     }
 
+    public static function setCache(DatabaseCacheInterface $cache): void
+    {
+        self::$cache = $cache;
+    }
+
+    public static function clearCache(): void
+    {
+        self::$cache = null;
+    }
+
+    public static function cache(): DatabaseCacheInterface
+    {
+        return self::$cache ??= new NullDatabaseCache();
+    }
+
+    public static function table(string $table, ?string $connection = null): QueryBuilder
+    {
+        return new QueryBuilder($table, $connection);
+    }
+
     /**
-     * Exécute une requête SELECT et retourne tous les résultats.
+     * /Exécute une requête SELECT et retourne tous les résultats.
      * 
      * @param array<int, mixed> $bindings Valeurs à binder aux placeholders (?)
      * @return array<int, array<string, mixed>> Liste des lignes trouvées
@@ -124,12 +147,17 @@ final class DB
         return $statement;
     }
 
-    private static function pdo(?string $connection): PDO
+    public static function connection(?string $connection = null): PDO
     {
         if (self::$manager === null) {
             throw new LogicException('DB manager is not configured. Call DB::setManager() first.');
         }
 
         return self::$manager->connection($connection);
+    }
+
+    private static function pdo(?string $connection): PDO
+    {
+        return self::connection($connection);
     }
 }

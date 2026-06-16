@@ -13,8 +13,12 @@ use Velt\Database\Tests\Fakes\ArrayConfigRepository;
 
 final class DatabaseManagerTest extends TestCase
 {
+    use RequiresSqlite;
+
     public function test_it_resolves_default_connection_from_config(): void
     {
+        $this->requireSqlite();
+
         $manager = new DatabaseManager(
             new ArrayConfigRepository([
                 'database' => [
@@ -37,6 +41,8 @@ final class DatabaseManagerTest extends TestCase
 
     public function test_it_reuses_existing_connection_instance(): void
     {
+        $this->requireSqlite();
+
         $manager = new DatabaseManager(
             new ArrayConfigRepository([
                 'database' => [
