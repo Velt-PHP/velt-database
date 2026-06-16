@@ -23,6 +23,7 @@ final class Migrator
         $batch = $this->repository->nextBatch();
         $executed = [];
 
+        // Les fichiers sont tries par nom pour respecter l'ordre chronologique des timestamps.
         foreach ($this->files() as $name => $file) {
             if (in_array($name, $ran, true)) {
                 continue;
@@ -30,6 +31,7 @@ final class Migrator
 
             $migration = $this->load($file);
             $migration->up();
+            // On log seulement apres un up() reussi pour eviter un etat partiellement marque comme migre.
             $this->repository->log($name, $batch);
             $executed[] = $name;
         }
@@ -53,6 +55,7 @@ final class Migrator
 
             $migration = $this->load($file);
             $migration->down();
+            // Le rollback supprime l'entree apres down(), pour pouvoir retenter en cas d'erreur.
             $this->repository->delete($name);
             $rolledBack[] = $name;
         }
@@ -80,6 +83,7 @@ final class Migrator
     {
         $migration = require $file;
 
+        // Le format attendu est volontairement simple: un objet anonyme avec up() et down().
         if (!is_object($migration) || !method_exists($migration, 'up') || !method_exists($migration, 'down')) {
             throw new RuntimeException(sprintf('Migration "%s" must return an object with up() and down() methods.', $file));
         }

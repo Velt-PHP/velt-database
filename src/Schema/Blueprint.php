@@ -15,6 +15,7 @@ final class Blueprint
 
     public function id(string $name = 'id'): self
     {
+        // Colonne primaire conventionnelle, traduite par chaque grammar selon le driver.
         $this->columns[] = ['name' => $name, 'type' => 'id', 'nullable' => false];
 
         return $this;
@@ -36,6 +37,7 @@ final class Blueprint
 
     public function timestamps(): self
     {
+        // Convention Velt/Laravel-like pour suivre creation et mise a jour des lignes.
         $this->columns[] = ['name' => 'created_at', 'type' => 'timestamp', 'nullable' => true];
         $this->columns[] = ['name' => 'updated_at', 'type' => 'timestamp', 'nullable' => true];
 

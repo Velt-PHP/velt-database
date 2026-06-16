@@ -13,6 +13,7 @@ final class SeederRunner
      */
     public function run(string|Seeder $seeder): void
     {
+        // Accepte une instance deja construite ou un nom de classe genere par la CLI.
         $instance = is_string($seeder) ? new $seeder() : $seeder;
 
         if (!$instance instanceof Seeder) {

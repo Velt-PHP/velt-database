@@ -19,6 +19,7 @@ abstract class Factory
 
     public static function new(): static
     {
+        // Point d'entree lisible pour les tests: UserFactory::new()->make().
         return new static();
     }
 
@@ -44,6 +45,7 @@ abstract class Factory
 
         $items = [];
 
+        // Chaque iteration rappelle definition() pour permettre des valeurs dynamiques.
         for ($i = 0; $i < $this->count; $i++) {
             $items[] = $this->definition();
         }
@@ -59,6 +61,7 @@ abstract class Factory
         $items = $this->make();
         $rows = $this->count === 1 ? [$items] : $items;
 
+        // create() persiste les donnees generees mais retourne le meme payload pour assertion/test.
         foreach ($rows as $row) {
             DB::table($this->table())->insert($row);
         }

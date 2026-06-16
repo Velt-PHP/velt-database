@@ -20,6 +20,7 @@ final class SchemaBuilder
     public function create(string $table, callable $callback): void
     {
         $blueprint = new Blueprint($table);
+        // Le callback remplit le Blueprint avec les colonnes demandees par la migration.
         $callback($blueprint);
 
         DB::statement($this->grammar()->compileCreate($blueprint), [], $this->connection);
@@ -39,6 +40,7 @@ final class SchemaBuilder
     {
         $driver = DB::connection($this->connection)->getAttribute(\PDO::ATTR_DRIVER_NAME);
 
+        // Chaque driver a sa grammar pour garder les differences SQL hors du SchemaBuilder.
         return match ($driver) {
             'sqlite' => new SQLiteSchemaGrammar(),
             'mysql' => new MySqlSchemaGrammar(),
