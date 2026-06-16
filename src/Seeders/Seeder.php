@@ -13,6 +13,7 @@ abstract class Seeder
      */
     protected function call(string|Seeder $seeder): void
     {
+        // Permet a un seeder principal d'orchestrer plusieurs seeders enfants.
         $instance = is_string($seeder) ? new $seeder() : $seeder;
         $instance->run();
     }

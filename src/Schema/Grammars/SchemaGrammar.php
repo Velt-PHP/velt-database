@@ -11,6 +11,7 @@ abstract class SchemaGrammar
 {
     public function compileCreate(Blueprint $blueprint): string
     {
+        // Transforme les colonnes abstraites du Blueprint en colonnes SQL concretes.
         $columns = array_map(
             fn (array $column): string => $this->compileColumn($column),
             $blueprint->columns(),
@@ -35,6 +36,7 @@ abstract class SchemaGrammar
     {
         $sql = SqlIdentifier::quote($column['name']) . ' ' . $this->type($column['type']);
 
+        // Les colonnes id embarquent deja leurs contraintes propres dans chaque driver.
         if (!$column['nullable'] && $column['type'] !== 'id') {
             $sql .= ' NOT NULL';
         }

@@ -26,6 +26,7 @@ final class QueryBuilder
         private readonly string $table,
         private readonly ?string $connection = null,
     ) {
+        // Valide le nom de table immediatement: les identifiers ne peuvent pas etre bindes comme les valeurs.
         SqlIdentifier::quote($table);
     }
 
@@ -40,6 +41,7 @@ final class QueryBuilder
     {
         $operator = '=';
 
+        // Supporte where('email', $email) et where('age', '>=', 18).
         if (func_num_args() >= 3) {
             $operator = strtolower((string) $operatorOrValue);
         } else {
@@ -96,6 +98,7 @@ final class QueryBuilder
             throw new InvalidArgumentException('Cache TTL must be greater than zero.');
         }
 
+        // Le TTL est stocke sur le builder et applique uniquement aux lectures get()/first().
         $this->rememberTtl = $seconds;
 
         return $this;
@@ -112,6 +115,7 @@ final class QueryBuilder
             return DB::select($sql, $bindings, $this->connection);
         }
 
+        // La cle inclut SQL + bindings pour distinguer deux requetes avec la meme structure.
         $key = $this->cacheKey($sql, $bindings);
 
         return DB::cache()->remember(
@@ -143,6 +147,7 @@ final class QueryBuilder
 
         $columns = array_keys($values);
         $columnSql = implode(', ', array_map([SqlIdentifier::class, 'quote'], $columns));
+        // Les valeurs restent toujours des placeholders prepares.
         $placeholders = implode(', ', array_fill(0, count($values), '?'));
 
         return DB::statement(
@@ -215,6 +220,7 @@ final class QueryBuilder
         $parts = [];
 
         foreach ($this->wheres as $where) {
+            // Seules les valeurs partent en bindings; les colonnes sont validees puis quotees.
             $parts[] = sprintf('%s %s ?', SqlIdentifier::quote($where['column']), strtoupper($where['operator']));
             $bindings[] = $where['value'];
         }

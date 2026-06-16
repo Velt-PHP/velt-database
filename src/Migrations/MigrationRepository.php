@@ -12,6 +12,7 @@ final class MigrationRepository
     {
         $driver = DB::connection()->getAttribute(\PDO::ATTR_DRIVER_NAME);
 
+        // La table migrations garde un SQL par driver, car l'auto-increment differe selon PDO.
         $sql = match ($driver) {
             'sqlite' => 'CREATE TABLE IF NOT EXISTS migrations (id INTEGER PRIMARY KEY AUTOINCREMENT, migration TEXT NOT NULL, batch INTEGER NOT NULL)',
             'mysql' => 'CREATE TABLE IF NOT EXISTS migrations (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, migration VARCHAR(255) NOT NULL, batch INT NOT NULL)',
@@ -51,6 +52,7 @@ final class MigrationRepository
         $this->ensureTable();
         $row = DB::first('SELECT MAX(batch) AS batch FROM migrations');
 
+        // Une nouvelle execution prend toujours la batch suivante.
         return ((int) ($row['batch'] ?? 0)) + 1;
     }
 
@@ -63,6 +65,7 @@ final class MigrationRepository
         $row = DB::first('SELECT MAX(batch) AS batch FROM migrations');
         $batch = (int) ($row['batch'] ?? 0);
 
+        // Aucune batch signifie qu'il n'y a rien a rollback.
         if ($batch === 0) {
             return [];
         }
