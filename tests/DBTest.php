@@ -13,9 +13,12 @@ use Velt\Database\Tests\Fakes\ArrayConfigRepository;
 
 final class DBTest extends TestCase
 {
+    use RequiresSqlite;
+
     protected function setUp(): void
     {
         parent::setUp();
+        $this->requireSqlite();
 
         $manager = new DatabaseManager(
             new ArrayConfigRepository([

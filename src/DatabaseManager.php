@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Velt\Database;
 
 use PDO;
-use Velt\Database\Contracts\ConfigRepositoryInterface;
 use Velt\Database\Exceptions\DatabaseConfigurationException;
+use Velt\Kernel\Contracts\ConfigRepositoryInterface;
 
 final class DatabaseManager
 {
@@ -20,10 +20,8 @@ final class DatabaseManager
     ) {
     }
 
-    /**
-     * Récupère ou crée une connexion PDO par nom.
-     * Les connexions sont mises en cache pour la durée de l'exécution.
-     */
+    //Récupère ou crée une connexion PDO par nom. Les connexions sont mises en cache pour la durée de l'exécution.
+     
     public function connection(?string $name = null): PDO
     {
         // Utilise la connexion par défaut si aucun nom n'est fourni
@@ -51,9 +49,8 @@ final class DatabaseManager
         return $pdo;
     }
 
-    /**
-     * Récupère le nom de la connexion par défaut depuis la configuration.
-     */
+    // Récupère le nom de la connexion par défaut depuis la configuration.
+    
     private function defaultConnectionName(): string
     {
         // Récupère la clé 'database.default' de la configuration

@@ -5,14 +5,14 @@ declare(strict_types=1);
 namespace Velt\Database\Tests\Fakes;
 
 use RuntimeException;
-use Velt\Database\Contracts\ContainerInterface;
+use Velt\Kernel\Contracts\ContainerInterface;
 
 final class ArrayContainer implements ContainerInterface
 {
     /** @var array<string, mixed> */
     private array $instances = [];
 
-    /** @var array<string, callable> */
+    /** @var array<string, callable|string> */
     private array $singletons = [];
 
     public function set(string $id, mixed $value): void
@@ -20,9 +20,24 @@ final class ArrayContainer implements ContainerInterface
         $this->instances[$id] = $value;
     }
 
-    public function singleton(string $id, callable $factory): void
+    public function bind(string $id, callable|string $resolver): void
     {
-        $this->singletons[$id] = $factory;
+        $this->singletons[$id] = $resolver;
+    }
+
+    public function singleton(string $id, callable|string $resolver): void
+    {
+        $this->singletons[$id] = $resolver;
+    }
+
+    public function instance(string $id, object $instance): void
+    {
+        $this->instances[$id] = $instance;
+    }
+
+    public function alias(string $abstract, string $alias): void
+    {
+        $this->instances[$alias] = $this->get($abstract);
     }
 
     public function get(string $id): mixed
@@ -32,7 +47,8 @@ final class ArrayContainer implements ContainerInterface
         }
 
         if (array_key_exists($id, $this->singletons)) {
-            $instance = $this->singletons[$id]($this);
+            $resolver = $this->singletons[$id];
+            $instance = is_callable($resolver) ? $resolver($this) : new $resolver();
             $this->instances[$id] = $instance;
 
             return $instance;

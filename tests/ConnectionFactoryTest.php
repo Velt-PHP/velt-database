@@ -12,8 +12,12 @@ use Velt\Database\Exceptions\UnknownDatabaseDriverException;
 
 final class ConnectionFactoryTest extends TestCase
 {
+    use RequiresSqlite;
+
     public function test_it_creates_sqlite_memory_connection(): void
     {
+        $this->requireSqlite();
+
         $factory = new ConnectionFactory();
 
         $pdo = $factory->create([

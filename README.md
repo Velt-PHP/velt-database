@@ -1,14 +1,104 @@
 # Velt Database - Module PDO Complet
 
-## 📋 Vue d'ensemble
+## Mise a jour Module 3 Data ORM
+
+Le package contient maintenant les fondations database suivantes, sans modifier le repo `veltphp-cli`.
+
+### Query Builder
+
+```php
+use Velt\Database\DB;
+
+$user = DB::table('users')->where('email', $email)->first();
+$users = DB::table('users')->select('id', 'name')->orderBy('id')->limit(10)->get();
+DB::table('users')->insert(['name' => 'Ada', 'email' => 'ada@example.com']);
+DB::table('users')->where('id', 1)->update(['name' => 'Ada Lovelace']);
+DB::table('users')->where('id', 1)->delete();
+```
+
+Toutes les valeurs dynamiques passent par des requetes preparees. Les noms de tables et colonnes sont valides comme identifiers SQL avant compilation.
+
+### Schema Builder et migrations
+
+```php
+use Velt\Database\Schema\Blueprint;
+use Velt\Database\Schema\Schema;
+
+Schema::create('users', function (Blueprint $table): void {
+    $table->id();
+    $table->string('name');
+    $table->integer('age');
+    $table->timestamps();
+});
+
+Schema::drop('users');
+```
+
+Le runner de migrations est disponible cote runtime :
+
+```php
+use Velt\Database\Migrations\Migrator;
+
+$migrator = new Migrator(__DIR__ . '/database/migrations');
+$migrator->migrate();
+$migrator->rollback();
+```
+
+Les commandes `php bin/velt migrate`, `migrate:rollback`, `make:migration`, `make:seeder` et `db:seed` doivent etre ajoutees dans `veltphp-cli`. Voir `issues/06-cli-database-commands.md`.
+
+### Seeders et factories
+
+```php
+use Velt\Database\Seeders\Seeder;
+
+final class UserSeeder extends Seeder
+{
+    public function run(): void
+    {
+        DB::table('users')->insert(['name' => 'Ada', 'email' => 'ada@example.com']);
+    }
+}
+```
+
+```php
+use Velt\Database\Factories\Factory;
+
+final class UserFactory extends Factory
+{
+    public function definition(): array
+    {
+        return ['name' => 'Ada', 'email' => 'ada@example.com'];
+    }
+
+    protected function table(): string
+    {
+        return 'users';
+    }
+}
+```
+
+### Cache de resultats
+
+```php
+use Velt\Database\Cache\FileDatabaseCache;
+
+DB::setCache(new FileDatabaseCache(__DIR__ . '/storage/database-cache'));
+
+$users = DB::table('users')->where('active', 1)->remember(60)->get();
+DB::cache()->flush();
+```
+
+En environnement `testing`, `DatabaseServiceProvider` utilise un cache nul par defaut.
+
+##  Vue d'ensemble
 
 Ce module fournit une couche d'abstraction de base de données pour le framework Velt, implémentant les 5 premières étapes d'un système de gestion de base de données robuste et sécurisé.
 
-**Statut:** ✅ Complet - 5/5 issues implémentées, 19 tests passants
+**Statut:**  Complet - 5/5 issues implémentées, 19 tests passants
 
 ---
 
-## 🎯 Objectifs et raisons
+##  Objectifs et raisons
 
 ### Pourquoi ce module?
 Le framework Velt nécessite une couche d'accès aux données **centralisée, sécurisée et extensible**:
@@ -20,7 +110,7 @@ Le framework Velt nécessite une couche d'accès aux données **centralisée, s�
 
 ---
 
-## 🏗️ Architecture générale
+##  Architecture générale
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -57,7 +147,7 @@ Le framework Velt nécessite une couche d'accès aux données **centralisée, s�
 
 ---
 
-## 📦 Composants implémentés
+##  Composants implémentés
 
 ### 1. **ConnectionFactory** (`src/ConnectionFactory.php`)
 
@@ -176,11 +266,11 @@ private function defaultConnectionName(): string
 
 **Requêtes préparées obligatoires:**
 ```php
-// ✅ AUTORISÉ - Requête préparée
+//  AUTORISÉ - Requête préparée
 DB::select('SELECT * FROM users WHERE id = ?', [1]);
 DB::select('SELECT * FROM users WHERE email = ?', [$email]);
 
-// ❌ INTERDIT - Interprétation SQL interdite
+//  INTERDIT - Interprétation SQL interdite
 // (Les placeholders ? sont obligatoires)
 ```
 
@@ -265,11 +355,11 @@ protected static function tableName(): string
 ```
 
 **Limitations actuelles (MVP):**
-- ❌ Pas de relations (belongsTo, hasMany, etc.)
-- ❌ Pas de dirty tracking (modification avant save)
-- ❌ Pas de mass assignment protection
-- ❌ Pas de validation built-in
-- ❌ Pas de scopes ou query builder fluent
+-  Pas de relations (belongsTo, hasMany, etc.)
+-  Pas de dirty tracking (modification avant save)
+-  Pas de mass assignment protection
+-  Pas de validation built-in
+-  Pas de scopes ou query builder fluent
 
 Ces fonctionnalités seront ajoutées dans les phases suivantes.
 
@@ -309,7 +399,7 @@ $manager = $container->get(DatabaseManager::class);
 
 ---
 
-## 🔧 Configuration
+##  Configuration
 
 ### Structure attendue
 
@@ -345,7 +435,7 @@ return [
 
 ---
 
-## 📚 Utilisation complète
+##  Utilisation complète
 
 ### Configuration du service provider
 
@@ -405,13 +495,13 @@ $id = User::create([
 $user = User::find(1);
 $users = User::all();
 
-// ⚠️ UPDATE et DELETE ne sont pas implémentés en MVP
+//  UPDATE et DELETE ne sont pas implémentés en MVP
 // Utiliser DB::statement() pour ces opérations
 ```
 
 ---
 
-## 🧪 Tests
+##  Tests
 
 ### Exécuter les tests
 
@@ -457,11 +547,11 @@ tests/
 
 ---
 
-## 🔐 Sécurité
+##  Sécurité
 
 ### Requêtes préparées obligatoires
 
-✅ **Tous les accès à la base utilisent des prepared statements:**
+ **Tous les accès à la base utilisent des prepared statements:**
 
 ```php
 // Paramètres bindés de manière sécurisée
@@ -469,7 +559,7 @@ DB::select('SELECT * FROM users WHERE email = ?', [$userInput]);
 DB::select('SELECT * FROM users WHERE email = ? AND role = ?', [$email, $role]);
 ```
 
-❌ **Pas de concaténation string:**
+ **Pas de concaténation string:**
 ```php
 // JAMAIS FAIRE CELA - INJECTION SQL!
 $sql = "SELECT * FROM users WHERE email = '$userInput'";
@@ -487,7 +577,7 @@ try {
 
 ---
 
-## 🎨 Design Patterns utilisés
+##  Design Patterns utilisés
 
 ### 1. **Factory Pattern**
 ```php
@@ -495,7 +585,7 @@ try {
 $factory = new ConnectionFactory();
 $pdo = $factory->create($config);
 ```
-✅ Centralise la création complexe
+ Centralise la création complexe
 
 ### 2. **Service Provider Pattern**
 ```php
@@ -503,7 +593,7 @@ $pdo = $factory->create($config);
 $provider = new DatabaseServiceProvider();
 $provider->register($container);
 ```
-✅ Organise l'initialisation des services
+ Organise l'initialisation des services
 
 ### 3. **Facade Pattern**
 ```php
@@ -511,14 +601,14 @@ $provider->register($container);
 DB::select(...);
 DB::transaction(...);
 ```
-✅ Simplifie l'utilisation depuis n'importe où
+ Simplifie l'utilisation depuis n'importe où
 
 ### 4. **Singleton Pattern**
 ```php
 // DatabaseManager créé une seule fois
 $container->singleton(DatabaseManager::class, ...);
 ```
-✅ Évite les connexions multiples
+ Évite les connexions multiples
 
 ### 5. **Dependency Injection**
 ```php
@@ -527,7 +617,7 @@ public function __construct(
     private ConfigRepositoryInterface $config,
 ) {}
 ```
-✅ Testabilité et flexibilité
+ Testabilité et flexibilité
 
 ### 6. **Repository Pattern**
 ```php
@@ -536,11 +626,11 @@ interface ConfigRepositoryInterface {
     public function get(string $key, mixed $default = null): mixed;
 }
 ```
-✅ Découple de l'implémentation
+ Découple de l'implémentation
 
 ---
 
-## 📈 Avantages de cette implémentation
+##  Avantages de cette implémentation
 
 | Aspect | Bénéfice |
 |--------|----------|
