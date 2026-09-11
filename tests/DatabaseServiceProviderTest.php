@@ -72,6 +72,11 @@ final class DatabaseServiceProviderTest extends TestCase
                 return __DIR__;
             }
 
+            public function version(): string
+            {
+                return 'test';
+            }
+
             public function container(): ContainerInterface
             {
                 return $this->container;
@@ -125,6 +130,94 @@ final class DatabaseServiceProviderTest extends TestCase
             public function registerProvider(string|ServiceProviderInterface $provider): ServiceProviderInterface
             {
                 throw new \LogicException('Not used by this test.');
+            }
+
+            public function hasProvider(string $provider): bool
+            {
+                return false;
+            }
+
+            public function getProvider(string $provider): ?ServiceProviderInterface
+            {
+                return null;
+            }
+
+            public function providers(): array
+            {
+                return [];
+            }
+
+            public function requestScope(): \Velt\Kernel\Contracts\RequestScopeInterface
+            {
+                throw new \LogicException('Not used by this test.');
+            }
+
+            public function ready(): void
+            {
+            }
+
+            public function bootstrap(): void
+            {
+            }
+
+            public function handle(mixed $input = null): mixed
+            {
+                throw new \LogicException('Not used by this test.');
+            }
+
+            public function terminate(mixed $input = null, mixed $output = null): void
+            {
+            }
+
+            public function fail(\Throwable $exception, string $phase = 'runtime'): void
+            {
+                throw $exception;
+            }
+
+            public function pause(): void
+            {
+            }
+
+            public function resume(): void
+            {
+            }
+
+            public function reset(): void
+            {
+            }
+
+            public function shutdown(): void
+            {
+            }
+
+            public function isReady(): bool
+            {
+                return false;
+            }
+
+            public function isPaused(): bool
+            {
+                return false;
+            }
+
+            public function isShutdown(): bool
+            {
+                return false;
+            }
+
+            public function isBootstrapped(): bool
+            {
+                return false;
+            }
+
+            public function isTerminated(): bool
+            {
+                return false;
+            }
+
+            public function isBooted(): bool
+            {
+                return false;
             }
 
             public function boot(): void

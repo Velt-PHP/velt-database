@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Velt\Database\Migrations;
 
 use RuntimeException;
+use Velt\Database\DB;
+use Velt\Database\Exceptions\MigrationException;
 
 final class Migrator
 {
@@ -20,21 +22,36 @@ final class Migrator
     public function migrate(): array
     {
         $ran = $this->repository->ran();
-        $batch = $this->repository->nextBatch();
-        $executed = [];
+        $files = $this->files();
+        $available = array_keys($files);
+        $missing = array_diff($ran, $available);
 
-        // Les fichiers sont tries par nom pour respecter l'ordre chronologique des timestamps.
-        foreach ($this->files() as $name => $file) {
-            if (in_array($name, $ran, true)) {
-                continue;
+        if ($missing !== []) {
+            throw new MigrationException(sprintf(
+                'Migration history contains missing files: %s.',
+                implode(', ', $missing),
+            ));
+        }
+
+        $batch = $this->repository->nextBatch();
+        $executed = DB::transaction(function () use ($files, $ran, $batch): array {
+            $executed = [];
+
+            // Les fichiers sont tries par nom pour respecter l'ordre chronologique des timestamps.
+            foreach ($files as $name => $file) {
+                if (in_array($name, $ran, true)) {
+                    continue;
+                }
+
+                $migration = $this->load($file);
+                $migration->up();
+                // On log seulement apres un up() reussi pour eviter un etat partiellement marque comme migre.
+                $this->repository->log($name, $batch);
+                $executed[] = $name;
             }
 
-            $migration = $this->load($file);
-            $migration->up();
-            // On log seulement apres un up() reussi pour eviter un etat partiellement marque comme migre.
-            $this->repository->log($name, $batch);
-            $executed[] = $name;
-        }
+            return $executed;
+        });
 
         return $executed;
     }
@@ -44,21 +61,25 @@ final class Migrator
      */
     public function rollback(): array
     {
-        $rolledBack = [];
+        $rolledBack = DB::transaction(function (): array {
+            $rolledBack = [];
 
-        foreach ($this->repository->lastBatch() as $name) {
-            $file = $this->path . DIRECTORY_SEPARATOR . $name;
+            foreach ($this->repository->lastBatch() as $name) {
+                $file = $this->path . DIRECTORY_SEPARATOR . $name;
 
-            if (!is_file($file)) {
-                throw new RuntimeException(sprintf('Migration file "%s" was not found.', $file));
+                if (!is_file($file)) {
+                    throw new MigrationException(sprintf('Migration file "%s" was not found.', $file));
+                }
+
+                $migration = $this->load($file);
+                $migration->down();
+                // Le rollback supprime l'entree apres down(), pour pouvoir retenter en cas d'erreur.
+                $this->repository->delete($name);
+                $rolledBack[] = $name;
             }
 
-            $migration = $this->load($file);
-            $migration->down();
-            // Le rollback supprime l'entree apres down(), pour pouvoir retenter en cas d'erreur.
-            $this->repository->delete($name);
-            $rolledBack[] = $name;
-        }
+            return $rolledBack;
+        });
 
         return $rolledBack;
     }

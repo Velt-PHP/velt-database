@@ -105,4 +105,23 @@ final class DBTest extends TestCase
         $row = DB::first('SELECT email FROM users WHERE email = ?', ['rollback@example.com']);
         self::assertNull($row);
     }
+
+    public function test_nested_transaction_rolls_back_to_savepoint_without_aborting_outer_transaction(): void
+    {
+        DB::transaction(function (): void {
+            DB::statement('INSERT INTO users (name, email) VALUES (?, ?)', ['Outer', 'outer@example.com']);
+
+            try {
+                DB::transaction(function (): void {
+                    DB::statement('INSERT INTO users (name, email) VALUES (?, ?)', ['Inner', 'inner@example.com']);
+                    throw new RuntimeException('rollback inner');
+                });
+            } catch (RuntimeException $exception) {
+                self::assertSame('rollback inner', $exception->getMessage());
+            }
+        });
+
+        self::assertNotNull(DB::first('SELECT id FROM users WHERE email = ?', ['outer@example.com']));
+        self::assertNull(DB::first('SELECT id FROM users WHERE email = ?', ['inner@example.com']));
+    }
 }

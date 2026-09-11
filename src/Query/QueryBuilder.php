@@ -15,10 +15,15 @@ final class QueryBuilder
     /** @var list<array{column:string,operator:string,value:mixed}> */
     private array $wheres = [];
 
+    /** @var list<array{column:string,values:list<mixed>}> */
+    private array $whereIns = [];
+
     /** @var list<array{column:string,direction:string}> */
     private array $orders = [];
 
     private ?int $limit = null;
+
+    private ?int $offset = null;
 
     private ?int $rememberTtl = null;
 
@@ -63,6 +68,17 @@ final class QueryBuilder
         return $this;
     }
 
+    /**
+     * @param list<mixed> $values
+     */
+    public function whereIn(string $column, array $values): self
+    {
+        SqlIdentifier::quote($column);
+        $this->whereIns[] = ['column' => $column, 'values' => array_values($values)];
+
+        return $this;
+    }
+
     public function orderBy(string $column, string $direction = 'asc'): self
     {
         $direction = strtolower($direction);
@@ -90,6 +106,29 @@ final class QueryBuilder
         $this->limit = $limit;
 
         return $this;
+    }
+
+    public function offset(int $offset): self
+    {
+        if ($offset < 0) {
+            throw new InvalidArgumentException('Offset cannot be negative.');
+        }
+
+        $this->offset = $offset;
+
+        return $this;
+    }
+
+    public function count(): int
+    {
+        [$whereSql, $bindings] = $this->compileWhere();
+        $row = DB::first(
+            sprintf('SELECT COUNT(*) AS aggregate FROM %s%s', SqlIdentifier::quote($this->table), $whereSql),
+            $bindings,
+            $this->connection,
+        );
+
+        return (int) ($row['aggregate'] ?? 0);
     }
 
     public function remember(int $seconds): self
@@ -200,9 +239,10 @@ final class QueryBuilder
         [$whereSql, $bindings] = $this->compileWhere();
         $orderSql = $this->compileOrders();
         $limitSql = $this->limit === null ? '' : ' LIMIT ' . $this->limit;
+        $offsetSql = $this->offset === null ? '' : ' OFFSET ' . $this->offset;
 
         return [
-            sprintf('SELECT %s FROM %s%s%s%s', $columns, SqlIdentifier::quote($this->table), $whereSql, $orderSql, $limitSql),
+            sprintf('SELECT %s FROM %s%s%s%s%s', $columns, SqlIdentifier::quote($this->table), $whereSql, $orderSql, $limitSql, $offsetSql),
             $bindings,
         ];
     }
@@ -212,7 +252,7 @@ final class QueryBuilder
      */
     private function compileWhere(): array
     {
-        if ($this->wheres === []) {
+        if ($this->wheres === [] && $this->whereIns === []) {
             return ['', []];
         }
 
@@ -223,6 +263,20 @@ final class QueryBuilder
             // Seules les valeurs partent en bindings; les colonnes sont validees puis quotees.
             $parts[] = sprintf('%s %s ?', SqlIdentifier::quote($where['column']), strtoupper($where['operator']));
             $bindings[] = $where['value'];
+        }
+
+        foreach ($this->whereIns as $whereIn) {
+            if ($whereIn['values'] === []) {
+                $parts[] = '1 = 0';
+                continue;
+            }
+
+            $parts[] = sprintf(
+                '%s IN (%s)',
+                SqlIdentifier::quote($whereIn['column']),
+                implode(', ', array_fill(0, count($whereIn['values']), '?')),
+            );
+            array_push($bindings, ...$whereIn['values']);
         }
 
         return [' WHERE ' . implode(' AND ', $parts), $bindings];
