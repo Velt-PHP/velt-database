@@ -19,6 +19,9 @@ final class DB
 
     private static ?DatabaseCacheInterface $cache = null;
 
+    /** @var array<string, int> */
+    private static array $transactionLevels = [];
+
     //Enregistre le manager de base de données pour utilisation via la façade DB.
      
     public static function setManager(DatabaseManager $manager): void
@@ -31,6 +34,7 @@ final class DB
     public static function clearManager(): void
     {
         self::$manager = null;
+        self::$transactionLevels = [];
     }
 
     public static function setCache(DatabaseCacheInterface $cache): void
@@ -113,13 +117,32 @@ final class DB
         // Récupère la connexion PDO
         $pdo = self::pdo($connection);
 
+        $connectionKey = $connection ?? '__default__';
+
         // Si une transaction est déjà active, exécute directement le callback
         if ($pdo->inTransaction()) {
-            return $callback();
+            $level = (self::$transactionLevels[$connectionKey] ?? 0) + 1;
+            $savepoint = 'velt_sp_' . $level;
+            self::$transactionLevels[$connectionKey] = $level;
+            $pdo->exec('SAVEPOINT ' . $savepoint);
+
+            try {
+                $result = $callback();
+                $pdo->exec('RELEASE SAVEPOINT ' . $savepoint);
+
+                return $result;
+            } catch (Throwable $e) {
+                $pdo->exec('ROLLBACK TO SAVEPOINT ' . $savepoint);
+                $pdo->exec('RELEASE SAVEPOINT ' . $savepoint);
+                throw $e;
+            } finally {
+                self::$transactionLevels[$connectionKey] = $level - 1;
+            }
         }
 
         // Démarre une nouvelle transaction
         $pdo->beginTransaction();
+        self::$transactionLevels[$connectionKey] = 1;
 
         try {
             // Exécute le callback
@@ -133,6 +156,8 @@ final class DB
             // Annule la transaction en cas d'erreur
             $pdo->rollBack();
             throw $e;
+        } finally {
+            unset(self::$transactionLevels[$connectionKey]);
         }
     }
 

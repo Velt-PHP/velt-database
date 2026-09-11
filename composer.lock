@@ -4,22 +4,30 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "73cbcf1002b4f7ce1f8520c7126f2513",
+    "content-hash": "d802f12c33ea117ef24245e3a8cb8b3a",
     "packages": [
         {
             "name": "velt/kernel",
-            "version": "dev-main",
+            "version": "v0.1.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/Velt-PHP/veltphp-kernel.git",
+                "reference": "de9586699b74cf564a46bdbcd83af5f9c98e6cfc"
+            },
             "dist": {
-                "type": "path",
-                "url": "../veltphp-kernel/packages/kernel",
-                "reference": "5dd5f570486dc311dcea4133abb8aec70f85726f"
+                "type": "zip",
+                "url": "https://api.github.com/repos/Velt-PHP/veltphp-kernel/zipball/de9586699b74cf564a46bdbcd83af5f9c98e6cfc",
+                "reference": "de9586699b74cf564a46bdbcd83af5f9c98e6cfc",
+                "shasum": ""
             },
             "require": {
-                "php": "^8.2",
-                "velt/ui": "dev-main"
+                "php": "^8.2"
             },
             "require-dev": {
-                "phpunit/phpunit": "^11.0"
+                "friendsofphp/php-cs-fixer": "^3.95",
+                "phpstan/phpstan": "^2.2",
+                "phpunit/phpunit": "^11.0",
+                "rector/rector": "^2.4"
             },
             "type": "library",
             "autoload": {
@@ -27,73 +35,16 @@
                     "Velt\\Kernel\\": "src/"
                 }
             },
-            "autoload-dev": {
-                "psr-4": {
-                    "Velt\\Kernel\\Tests\\": "tests/"
-                }
-            },
-            "scripts": {
-                "test": [
-                    "phpunit"
-                ]
-            },
+            "notification-url": "https://packagist.org/downloads/",
             "license": [
                 "MIT"
             ],
             "description": "Core kernel contracts and foundation for the Velt framework.",
-            "transport-options": {
-                "symlink": true,
-                "relative": true
-            }
-        },
-        {
-            "name": "velt/ui",
-            "version": "dev-main",
-            "dist": {
-                "type": "path",
-                "url": "../velt-ui",
-                "reference": "69164c7e9fcc778ea5c93ca4ae033190671814f5"
+            "support": {
+                "issues": "https://github.com/Velt-PHP/veltphp-kernel/issues",
+                "source": "https://github.com/Velt-PHP/veltphp-kernel/tree/v0.1.1"
             },
-            "require": {
-                "php": "^8.2"
-            },
-            "require-dev": {
-                "friendsofphp/php-cs-fixer": "dev-master",
-                "phpstan/phpstan": "2.2.x-dev",
-                "phpunit/phpunit": "11.5.x-dev",
-                "symfony/var-dumper": "7.4.x-dev"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "Velt\\Ui\\": "src/"
-                }
-            },
-            "scripts": {
-                "test": [
-                    "phpunit"
-                ],
-                "analyse": [
-                    "phpstan analyse"
-                ],
-                "fix": [
-                    "php-cs-fixer fix"
-                ]
-            },
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Jules MUKADI",
-                    "email": "julesmukadi.dev@gmail.com"
-                }
-            ],
-            "description": "Declarative UI components and renderers for the Velt framework.",
-            "transport-options": {
-                "symlink": true,
-                "relative": true
-            }
+            "time": "2026-06-18T01:51:20+00:00"
         }
     ],
     "packages-dev": [
@@ -1769,9 +1720,7 @@
     ],
     "aliases": [],
     "minimum-stability": "dev",
-    "stability-flags": {
-        "velt/kernel": 20
-    },
+    "stability-flags": {},
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {

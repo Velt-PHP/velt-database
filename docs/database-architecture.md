@@ -118,14 +118,7 @@ Declare le package :
 Declare aussi la dependance kernel :
 
 ```json
-"velt/kernel": "dev-main"
-```
-
-En local, les repositories `path` pointent vers :
-
-```text
-../veltphp-kernel/packages/kernel
-../velt-ui
+"velt/kernel": "^0.1.0"
 ```
 
 Importance :
@@ -216,6 +209,10 @@ DB::transaction(fn () => ...);
 DB::table('users');
 DB::cache();
 ```
+
+Les transactions imbriquees utilisent des savepoints nommes. Une exception dans
+un callback interne annule uniquement son niveau et laisse le callback externe
+decider du commit ou du rollback.
 
 Importance :
 
@@ -381,6 +378,13 @@ Role :
 - executer `up()` ;
 - executer `down()` lors du rollback ;
 - synchroniser avec `MigrationRepository`.
+
+Chaque batch est execute dans une transaction PDO lorsque le moteur le permet.
+Un echec laisse le journal dans son etat precedent afin de permettre une
+nouvelle tentative. Une migration deja enregistree mais dont le fichier a
+disparu leve `MigrationException`; il faut restaurer le fichier depuis le
+controle de version ou effectuer une procedure de rollback explicite avant de
+reprendre.
 
 Format attendu d'une migration :
 

@@ -8,6 +8,7 @@ use PHPUnit\Framework\TestCase;
 use Velt\Database\ConnectionFactory;
 use Velt\Database\DatabaseManager;
 use Velt\Database\DB;
+use Velt\Database\Exceptions\MigrationException;
 use Velt\Database\Migrations\Migrator;
 use Velt\Database\Schema\Blueprint;
 use Velt\Database\Schema\Schema;
@@ -99,5 +100,84 @@ PHP);
 
         $this->expectException(\PDOException::class);
         DB::table('users')->get();
+    }
+
+    public function test_migrator_rolls_back_a_failed_batch(): void
+    {
+        file_put_contents($this->migrationPath . DIRECTORY_SEPARATOR . '2026_01_01_000000_create_users.php', <<<'PHP'
+<?php
+
+use Velt\Database\Schema\Blueprint;
+use Velt\Database\Schema\Schema;
+
+return new class {
+    public function up(): void
+    {
+        Schema::create('users', function (Blueprint $table): void {
+            $table->id();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::drop('users');
+    }
+};
+PHP);
+
+        file_put_contents($this->migrationPath . DIRECTORY_SEPARATOR . '2026_01_01_000001_fail.php', <<<'PHP'
+<?php
+
+return new class {
+    public function up(): void
+    {
+        throw new RuntimeException('migration failed');
+    }
+
+    public function down(): void
+    {
+    }
+};
+PHP);
+
+        try {
+            (new Migrator($this->migrationPath))->migrate();
+            self::fail('Expected migration failure.');
+        } catch (\RuntimeException $exception) {
+            self::assertSame('migration failed', $exception->getMessage());
+        }
+
+        self::assertSame([], DB::select('SELECT migration FROM migrations'));
+        self::assertSame([], DB::select("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?", ['users']));
+    }
+
+    public function test_migrator_rejects_missing_recorded_migration_file(): void
+    {
+        $migration = $this->migrationPath . DIRECTORY_SEPARATOR . '2026_01_01_000000_create_users.php';
+        file_put_contents($migration, <<<'PHP'
+<?php
+
+use Velt\Database\Schema\Schema;
+
+return new class {
+    public function up(): void
+    {
+        Schema::create('users', static function (\Velt\Database\Schema\Blueprint $table): void {
+            $table->id();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::drop('users');
+    }
+};
+PHP);
+
+        (new Migrator($this->migrationPath))->migrate();
+        unlink($migration);
+
+        $this->expectException(MigrationException::class);
+        (new Migrator($this->migrationPath))->migrate();
     }
 }
